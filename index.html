@@ -1,122 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Reclamações</title>
-    <style>
-      body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          background-color: #f4f4f4;
-      }
-
-      .container {
-          max-width: 600px;
-          margin: 50px auto;
-          background: #fff;
-          padding: 20px;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-
-      h1 {
-          text-align: center;
-      }
-
-      form {
-          display: flex;
-          flex-direction: column;
-      }
-
-      input, textarea {
-          margin-bottom: 10px;
-          padding: 10px;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-      }
-
-      button {
-          padding: 10px;
-          background-color: #28a745;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-      }
-
-      ul {
-          list-style: none;
-          padding: 0;
-      }
-
-      li {
-          background: #f9f9f9;
-          margin-bottom: 10px;
-          padding: 10px;
-          border-radius: 4px;
-      }
-
-      li button {
-          background-color: #dc3545;
-          margin-left: 10px;
-          cursor: pointer;
-      }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cadastro de Reclamações</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
+    form > * { display: block; width: 100%; margin-bottom: 10px; }
+    ul { padding-left: 0; }
+    li { list-style: none; border-bottom: 1px solid #ccc; margin-bottom: 10px; padding-bottom: 10px; }
+    button { cursor: pointer; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Cadastro de Reclamações</h1>
-    <form id="complaintForm">
-      <input type="text" id="title" placeholder="Título" required />
-      <textarea id="message" placeholder="Mensagem" rows="4" required></textarea>
-      <button type="submit">Enviar</button>
-    </form>
+  <h1>Cadastro de Reclamações</h1>
 
-    <h2>Reclamações Registradas</h2>
-    <ul id="complaintsList"></ul>
-  </div>
+  <form id="complaintForm">
+    <input type="text" id="title" placeholder="Título" required />
+    <textarea id="message" placeholder="Mensagem" rows="4" required></textarea>
+    <button type="submit">Enviar</button>
+  </form>
+
+  <h2>Reclamações Registradas</h2>
+  <ul id="complaintsList"></ul>
 
   <script>
-    const API_URL = 'https://pwa-deploy-back-end-3.onrender.com/complaints';
+    const API_URL = 'https://pwa-deploy-back-end-3.onrender.com/api/complaints';
 
     document.getElementById('complaintForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const title = document.getElementById('title').value;
-        const message = document.getElementById('message').value;
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const message = document.getElementById('message').value.trim();
 
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, message })
+      if (!title || !message) return alert('Preencha todos os campos.');
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, message })
         });
 
-        const complaint = await response.json();
+        if (!res.ok) throw new Error('Falha ao enviar reclamação');
+
+        const complaint = await res.json();
         appendComplaint(complaint);
 
         document.getElementById('title').value = '';
         document.getElementById('message').value = '';
+      } catch (err) {
+        alert(err.message);
+      }
     });
 
     async function loadComplaints() {
-        const response = await fetch(API_URL);
-        const complaints = await response.json();
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('Falha ao carregar reclamações');
+        const complaints = await res.json();
         complaints.forEach(appendComplaint);
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     function appendComplaint(complaint) {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <strong>${complaint.title}</strong>
-            <p>${complaint.message}</p>
-            <button onclick="deleteComplaint('${complaint._id}')">Deletar</button>
-        `;
-        document.getElementById('complaintsList').appendChild(li);
+      const li = document.createElement('li');
+      li.dataset.id = complaint._id;
+      li.innerHTML = `
+        <strong>${complaint.title}</strong><br />
+        <p>${complaint.message}</p>
+        <button onclick="deleteComplaint('${complaint._id}', this)">Deletar</button>
+      `;
+      document.getElementById('complaintsList').prepend(li);
     }
 
-    async function deleteComplaint(id) {
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        document.location.reload();
+    async function deleteComplaint(id, button) {
+      if (!confirm('Deseja realmente deletar esta reclamação?')) return;
+      try {
+        const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Erro ao deletar reclamação');
+        button.parentElement.remove();
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     loadComplaints();
