@@ -1,4 +1,4 @@
-const API_URL = 'https://pwa-deploy-back-end-3.onrender.com';
+const API_URL = 'https://pwa-deploy-back-end-3.onrender.com/complaints';
 
 document.getElementById('complaintForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -7,9 +7,7 @@ document.getElementById('complaintForm').addEventListener('submit', async (e) =>
 
     const response = await fetch(API_URL, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, message })
     });
 
